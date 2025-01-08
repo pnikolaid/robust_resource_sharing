@@ -7,10 +7,13 @@ from zoneinfo import ZoneInfo
 
 # Directories
 parent_directory = os.path.dirname(os.getcwd())
-os.chdir(parent_directory + "\\data")   # working directory
-plot_directory = parent_directory + "\\plots\\"
-test_scenario_plot_directory = plot_directory + "ts" + str(test_scenario) + "\\"
-code_directory = parent_directory + "\\code\\"
+rep_directory = os.path.dirname(parent_directory)
+data_directory = os.path.join(rep_directory, "data")
+os.chdir(data_directory)   # working directory
+
+plot_directory = os.path.join(parent_directory, "plots")
+test_scenario_plot_directory = os.path.join(plot_directory, f"ts{test_scenario}")
+code_directory = os.path.join(parent_directory, "code")
 
 
 # Define Zone and Frequency

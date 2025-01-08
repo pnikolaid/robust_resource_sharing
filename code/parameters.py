@@ -2,7 +2,7 @@ import importlib
 
 
 # Set Test Scenario to load the appropriate parameter file
-test_scenario = 3
+test_scenario = 1
 
 # Find the name of the parameter file
 parameter_file = f"parameters_ts{test_scenario}"
