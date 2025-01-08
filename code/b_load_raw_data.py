@@ -11,7 +11,7 @@ pd.set_option('display.max_columns', None)
 # Raw file format: [tiemstamp, sfn, subframe, rnti, direction, mcs_idx, nof_prb] (direction=1 means downlink)
 for data_index in range(slices):
 
-    #data_index = 0  # collect data for each slice one-by-one
+    data_index = 1  # collect data for each slice one-by-one
 
     zone = zones[data_index]
     freq = freqs[data_index]

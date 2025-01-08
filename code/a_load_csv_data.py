@@ -6,7 +6,6 @@ import numpy as np
 from datetime import timedelta
 
 for data_index in range(slices):
-
     zone = zones[data_index]
     freq = freqs[data_index]
     first_start_time = start_times[data_index]
