@@ -1,3 +1,5 @@
+import os
+
 from parameters import slices, zones, freqs, test_scenario,\
     test_scenario_plot_directory, sample_size_n, anomaly_matrix, P_H
 
@@ -9,14 +11,14 @@ import pickle
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.stats
+from scipy import stats
 from tabulate import tabulate
 
 import copy
 
 
 def plot_ecdf(time_series, string_label):
-    res1 = scipy.stats.ecdf(time_series)
+    res1 = stats.ecdf(time_series)
     states_x = res1.cdf.quantiles
     probs = res1.cdf.probabilities
     plt.step(states_x, probs, label=string_label)
@@ -51,7 +53,7 @@ for anomaly_index, anomalous_slices in enumerate(anomaly_matrix):
             zone = zones[i]
             freq = freqs[i]
 
-            with open(f"ts{test_scenario}_" + zone + freq + '-DL-regular.pkl', 'rb') as f:
+            with open(f"ts{test_scenario}_" + zone + freq + f'_{i}' + '-DL-regular.pkl', 'rb') as f:
                 new_list_dl = pickle.load(f)  # [RRC users, I_MCS, Demands]
 
             # Time series
@@ -69,9 +71,16 @@ for anomaly_index, anomalous_slices in enumerate(anomaly_matrix):
         ax2.set(xlabel='Number of Connected Users', ylabel="ECDF", title=f"Test Scenario {test_scenario}: "
                                                                          f"Connected Users")
 
-        total_U = np.zeros(len(Users[0]))
+        Timeslots = len(Users[0])
         for i in range(slices):
-            original_U = Users[i]
+            if len(Users[i]) <= Timeslots:
+                Timeslots = len(Users[i])
+
+        #total_U = np.zeros(len(Users[0]))
+        total_U = np.zeros(Timeslots)
+        for i in range(slices):
+            #original_U = Users[i]
+            original_U = Users[i][:Timeslots]
             total_U = total_U + np.array(original_U)
 
             label = f"NS {i}"
@@ -82,16 +91,18 @@ for anomaly_index, anomalous_slices in enumerate(anomaly_matrix):
                 plot_ecdf(total_U, label)
 
         ax2.legend()
-        fig2.savefig(test_scenario_plot_directory + "user_ecdf" + ".pdf", bbox_inches="tight")
+        fig2.savefig(os.path.join(test_scenario_plot_directory, "user_ecdf" + ".pdf"), bbox_inches="tight")
         plt.close(fig2)
 
         # Plot Demand Traffic
         fig3, ax3 = plt.subplots()
         ax3.set(xlabel='Bandwidth Demand (PRBs)', ylabel="ECDF", title=f"Test Scenario {test_scenario}:"
                                                                        f" Bandwidth Demands")
-        total_W = np.zeros(len(Demands[0]))
+        #total_W = np.zeros(len(Demands[0]))
+        total_W = np.zeros(Timeslots)
         for i in range(slices):
-            original_W = Demands[i]
+            #original_W = Demands[i]
+            original_W = Demands[i][:Timeslots]
             total_W = total_W + np.array(original_W)
 
             label = f"NS {i}"
@@ -102,7 +113,7 @@ for anomaly_index, anomalous_slices in enumerate(anomaly_matrix):
                 plot_ecdf(total_W, label)
 
         ax3.legend()
-        fig3.savefig(test_scenario_plot_directory + "PRB_ecdf" + ".pdf", bbox_inches="tight")
+        fig3.savefig(os.path.join(test_scenario_plot_directory, "PRB_ecdf" + ".pdf"), bbox_inches="tight")
         plt.close(fig3)
 
         # Create Table data
@@ -189,7 +200,7 @@ props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 # place a text box in upper left
 ax1.text(0.05, 0.95, text, transform=ax1.transAxes, fontsize=14, verticalalignment='top', bbox=props)
 
-fig1.savefig(test_scenario_plot_directory + "execution_time.pdf", bbox_inches="tight")
+fig1.savefig(os.path.join(test_scenario_plot_directory, "execution_time.pdf"), bbox_inches="tight")
 plt.close(fig1)
 
 # β vs n scatterplot
@@ -276,7 +287,7 @@ for anomaly_index, anomalous_slices in enumerate(anomaly_matrix):
     green_star = mlines.Line2D([], [], color='green', marker='*', linestyle='None', label='SLAs of normal NSs satisfied')
     red_x = mlines.Line2D([], [], color='red', marker='x', linestyle='None', label='SLA of a normal NS violated')
     ax.legend(handles=[green_star, red_x])
-    fig.savefig(test_scenario_plot_directory + f"scatter_plot_aNS{anomalous_slices[0]}" + ".pdf", bbox_inches="tight")
+    fig.savefig(os.path.join(test_scenario_plot_directory, f"scatter_plot_aNS{anomalous_slices[0]}" + ".pdf"), bbox_inches="tight")
     plt.close(fig)
 
 print("Plots saved in", test_scenario_plot_directory)

@@ -113,7 +113,7 @@ for data_index in range(slices):
     # Unpickle multiple times
     trial_list1_dl = []
     regular_list1_dl = []
-    f = open(f"ts{test_scenario}_" + zone + freq + '-alldata' + '.pkl', 'rb')
+    f = open(f"ts{test_scenario}_" + zone + freq + f'_{data_index}' + '-alldata' + '.pkl', 'rb')
     i = 1
     while True:
         try:
@@ -153,7 +153,7 @@ for data_index in range(slices):
         except EOFError:
             break
 
-    f = open(f"ts{test_scenario}_" + zone + freq + '-RRC-users.pkl', 'rb')
+    f = open(f"ts{test_scenario}_" + zone + freq +  f'_{data_index}' + '-RRC-users.pkl', 'rb')
     trial_RRC_users = []
     regular_RRC_users = []
     i = 1
@@ -174,8 +174,8 @@ for data_index in range(slices):
         except EOFError:
             break
 
-    with open(f"ts{test_scenario}_" + zone + freq + '-DL-' + '-trial-' + 'almost' + '.pkl', 'wb') as f:
+    with open(f"ts{test_scenario}_" + zone + freq + f'_{data_index}' + '-DL-' + '-trial-' + 'almost' + '.pkl', 'wb') as f:
         pickle.dump([trial_list1_dl, trial_RRC_users], f)
 
-    with open(f"ts{test_scenario}_" + zone + freq + '-DL-' + '-regular-' + 'almost' + '.pkl', 'wb') as f:
+    with open(f"ts{test_scenario}_" + zone + freq + f'_{data_index}' + '-DL-' + '-regular-' + 'almost' + '.pkl', 'wb') as f:
         pickle.dump([regular_list1_dl, regular_RRC_users], f)

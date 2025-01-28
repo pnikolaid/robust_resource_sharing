@@ -29,8 +29,8 @@ for data_index in range(slices):
 
         first_timedate = datetime.fromtimestamp(df['timestamp'][df.index[1]], ZoneInfo(key='Europe/Madrid'))
         last_timedate = datetime.fromtimestamp(df['timestamp'][df.index[-1]], ZoneInfo(key='Europe/Madrid'))
-        print(f"Batch first timestamp: {first_timedate}")
-        print(f"Batch last timestamp: {last_timedate}")
+        #print(f"Batch first timestamp: {first_timedate}")
+        #print(f"Batch last timestamp: {last_timedate}")
 
         within_observation_period = False
         current_day = -1
@@ -48,17 +48,17 @@ for data_index in range(slices):
         # log the batch if within observation period
         if within_observation_period:
             batch_list = df.to_numpy().tolist()
-            print(f"Batch within Day {current_day}/{days}! Appended to pickle file!")
+            #print(f"Batch within Day {current_day}/{days}! Appended to pickle file!")
             if first_batch:
-                with open(f"ts{test_scenario}_" + zone + freq + '-alldata' + '.pkl', 'wb') as f:
+                with open(f"ts{test_scenario}_" + zone + freq + f"_{data_index}" + '-alldata' + '.pkl', 'wb') as f:
                     pickle.dump(batch_list, f)
                     first_batch = False
             else:
-                with open(f"ts{test_scenario}_" + zone + freq + '-alldata' + '.pkl', 'ab') as f:
+                with open(f"ts{test_scenario}_" + zone + freq + f"_{data_index}" '-alldata' + '.pkl', 'ab') as f:
                     pickle.dump(batch_list, f)
 
         # if the batch starts after the last time of the last day, the search needs to terminate
         elif first_timedate > end_times[data_index] + timedelta(days):
             print("Batch starts after the observation period ends -> stopping search!")
             break
-    break    # collect data for each slice one-by-one
+    #break    # collect data for each slice one-by-one

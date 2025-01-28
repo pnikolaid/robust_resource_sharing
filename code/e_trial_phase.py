@@ -85,6 +85,10 @@ if __name__ == "__main__":
     # Line 7 and lines 15-25 can be skipped
     # In line 26, g(x) is now defined as g(x)=x
 
+    MC_directory = os.path.join(test_scenario_plot_directory, "MarkovChains")
+    if not os.path.exists(MC_directory):
+        os.makedirs(MC_directory)
+
     Users = []
     MCS = []
     Demands = []
@@ -104,7 +108,7 @@ if __name__ == "__main__":
     for i in range(slices):
         zone = zones[i]
         freq = freqs[i]
-        with open(f"ts{test_scenario}_" + zone + freq + '-DL-trial.pkl', 'rb') as f:
+        with open(f"ts{test_scenario}_" + zone + freq + f"_{i}" + '-DL-trial.pkl', 'rb') as f:
             new_list_dl = pickle.load(f)  # [RRC users, I_MCS, Demands]
 
         # Time series
@@ -128,6 +132,9 @@ if __name__ == "__main__":
     pmf_total_demand = defaultdict(float)
     # Scan it sequentially as if done online
     Timeslots = len(Users[0])
+    for i in range(slices):
+        if len(Users[i]) <= Timeslots:
+            Timeslots = len(Users[i])
     print("Total number of timeslots", Timeslots)
     for t in range(1, Timeslots):  # t ranges from 1,..., T-1
         total_demand = 0
@@ -193,16 +200,16 @@ if __name__ == "__main__":
 
     # Visualize data
     for i in range(slices):
-        filename = zones[i] + freqs[i] + "-users_MC"
-        visualize_matrix(t_Users[i], test_scenario_plot_directory + "MarkovChains\\" + filename)
+        filename = zones[i] + freqs[i] + f"_{i}" + "-users_MC"
+        visualize_matrix(t_Users[i], os.path.join(MC_directory, filename))
 
-        filename = zones[i] + freqs[i] + "-MCS_MC"
-        visualize_matrix(t_MCS[i], test_scenario_plot_directory + "MarkovChains\\" + filename)
+        filename = zones[i] + freqs[i] + f"_{i}" + "-MCS_MC"
+        visualize_matrix(t_MCS[i], os.path.join(MC_directory, filename))
 
     # Save stochastic models and provisioned bandwidth
     string = ""
     for i in range(slices):
-        string += zones[i] + freqs[i]
+        string += zones[i] + freqs[i] + f"_{i}"
         if i != slices-1:
             string += "_vs_"
 

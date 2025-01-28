@@ -381,7 +381,7 @@ def plot_ecdf(time_series, string_label):
 # Load stochastic models and provisioned bandwidth
 string = ""
 for i in range(slices):
-    string += zones[i] + freqs[i]
+    string += zones[i] + freqs[i] + f"_{i}"
     if i != slices-1:
         string += "_vs_"
 
@@ -410,7 +410,7 @@ for i in range(slices):
     zone = zones[i]
     freq = freqs[i]
 
-    with open(f"ts{test_scenario}_" + zone + freq + '-DL-regular.pkl', 'rb') as f:
+    with open(f"ts{test_scenario}_" + zone + freq + f"_{i}" + '-DL-regular.pkl', 'rb') as f:
         new_list_dl = pickle.load(f)  # [RRC users, I_MCS, Demands]
 
     # Time series
@@ -429,8 +429,6 @@ for i in range(slices):
 
 or_Demands = copy.deepcopy(Demands)
 or_Users = copy.deepcopy(Users)
-
-T = len(Users[0])
 
 print("Percentiles $W^H_i$:", WH)
 print(f"Number of timeslots: {T}")

@@ -71,8 +71,8 @@ for data_index in range(slices):
         print(f"Sample line: {new_data[0]}")
 
         if i == 0:
-            with open(f"ts{test_scenario}_" + zone + freq + '-RRC-users' + '.pkl', 'wb') as f:
+            with open(f"ts{test_scenario}_" + zone + freq + f"_{data_index}" + '-RRC-users' + '.pkl', 'wb') as f:
                 pickle.dump(new_data, f)
         else:
-            with open(f"ts{test_scenario}_" + zone + freq + '-RRC-users' + '.pkl', 'ab') as f:
+            with open(f"ts{test_scenario}_" + zone + freq + f"_{data_index}" + '-RRC-users' + '.pkl', 'ab') as f:
                 pickle.dump(new_data, f)

@@ -150,7 +150,8 @@ def big_multiplexing_function_over_time(t_Users, t_MCS, Wc, WH, scheme, stored_s
             # Allocate resources between slices in A by solving Binary Knapsack Problem (32)
             A_demands = [Demands[i][t] for i in A]
             A_deficits = [deficits[i] for i in A]
-            A_selected = bkp(A_deficits, A_demands, Wc)
+            int_A_deficits = [int(10000*i) for i in A_deficits]
+            A_selected = bkp(int_A_deficits, A_demands, Wc)
             A_accepted = [A[item] for item in A_selected]
             for i in A_accepted:
                 allocated_bandwidths[i] = Demands[i][t]
@@ -168,7 +169,8 @@ def big_multiplexing_function_over_time(t_Users, t_MCS, Wc, WH, scheme, stored_s
             else:
                 B_demands = [Demands[i][t] for i in B]
                 B_deficits = [deficits[i] for i in B]
-                B_selected = bkp(B_deficits, B_demands, WR)
+                int_B_deficits = [int(10000 * i) for i in B_deficits]
+                B_selected = bkp(int_B_deficits, B_demands, int(WR))
                 B_accepted = [B[item] for item in B_selected]
                 for i in B_accepted:
                     allocated_bandwidths[i] = Demands[i][t]
@@ -397,7 +399,7 @@ def plot_ecdf(time_series, string_label):
 # Load stochastic models and provisioned bandwidth
 string = ""
 for i in range(slices):
-    string += zones[i] + freqs[i]
+    string += zones[i] + freqs[i] + f"_{i}"
     if i != slices-1:
         string += "_vs_"
 
@@ -426,7 +428,7 @@ for i in range(slices):
     zone = zones[i]
     freq = freqs[i]
 
-    with open(f"ts{test_scenario}_" + zone + freq + '-DL-regular.pkl', 'rb') as f:
+    with open(f"ts{test_scenario}_" + zone + freq + f"_{i}" + '-DL-regular.pkl', 'rb') as f:
         new_list_dl = pickle.load(f)  # [RRC users, I_MCS, Demands]
 
     # Time series
@@ -448,6 +450,9 @@ or_MCS = copy.deepcopy(MCS)
 or_Demands = copy.deepcopy(Demands)
 
 T = len(Users[0])
+for i in range(slices):
+    if len(Users[i]) <= T:
+        T = len(Users[i])
 
 print("Percentiles $W^H_i$:", WH)
 print(f"Number of timeslots: {T}")

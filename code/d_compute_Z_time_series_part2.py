@@ -1,3 +1,5 @@
+import os
+
 from parameters import code_directory, round_step_u, round_step_m, round_step_w, slices, zones, freqs, Rc, T, \
     test_scenario
 
@@ -7,7 +9,6 @@ import numpy as np
 import math
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
 
 def similar_values(olist, step):
     min_val = math.ceil(np.min(olist) / step)
@@ -33,7 +34,8 @@ def compute_demands(list_of_users, list_of_mcs, bitrate):
             i_tbs.append(26)
 
     # Add required PRBs
-    with open(code_directory + '3GPP-table.pkl', 'rb') as f:
+    filepath_3GPP = os.path.join(code_directory, '3GPP-table.pkl')
+    with open(filepath_3GPP, 'rb') as f:
         table = pickle.load(f)
 
     table = np.array(table)
@@ -125,7 +127,7 @@ def big_processing_function(list1_dl, RRC_users, target_bitrate, trial_data):
 
     new_list_dl = [[Users, MCS, demands], [rU, rM, rW]]
 
-    with open(f"ts{test_scenario}_" + zone + freq + '-DL-' + string + '.pkl', 'wb') as f:
+    with open(f"ts{test_scenario}_" + zone + freq + f'_{data_index}' + '-DL-' + string + '.pkl', 'wb') as f:
         pickle.dump(new_list_dl, f)
 
 
@@ -138,12 +140,12 @@ if __name__ == "__main__":
         print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         print(f"Processing slice with data {zone}-{freq}")
 
-        with open(f"ts{test_scenario}_" + zone + freq + '-DL-' + '-trial-' + 'almost' + '.pkl', 'rb') as f:
+        with open(f"ts{test_scenario}_" + zone + freq + f'_{data_index}' + '-DL-' + '-trial-' + 'almost' + '.pkl', 'rb') as f:
             trial_data = pickle.load(f)
             trial_list1_dl = trial_data[0]
             trial_RRC_users = trial_data[1]
 
-        with open(f"ts{test_scenario}_" + zone + freq + '-DL-' + '-regular-' + 'almost' + '.pkl', 'rb') as f:
+        with open(f"ts{test_scenario}_" + zone + freq + f'_{data_index}' + '-DL-' + '-regular-' + 'almost' + '.pkl', 'rb') as f:
             regular_data = pickle.load(f)
             regular_list1_dl = trial_data[0]
             regular_RRC_users = trial_data[1]
