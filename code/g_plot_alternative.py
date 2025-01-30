@@ -41,7 +41,7 @@ for anomaly_index, anomalous_slices in enumerate(anomaly_matrix):
 
     # The scatter plots will be saved here at some point
     fig, ax = plt.subplots()
-    for low_states_removal_ratio in betas:
+    for low_states_removal_ratio in betas[:-1]:
 
         modes = ["no anomaly", "anomaly"]   # anomaly must be last
         schemes = ["no sharing", "sharing", "sharing + testing"]

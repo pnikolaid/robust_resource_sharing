@@ -378,7 +378,11 @@ def create_anomalies(t_Users, s_Users):
         temp_Demands[anomalous_slice] = compute_demands(temp_Users[anomalous_slice], or_MCS[anomalous_slice], Rc[anomalous_slice])
 
         # Create very high demands for checks
-        temp_Demands[anomalous_slice][model_change_time:end_anomaly+1] = [Wc_sharing] * (end_anomaly - model_change_time+1)
+        anomaly_samples = end_anomaly - model_change_time+1
+        high_demands = Wc_sharing * np.random.uniform(1/(anomalous_slice + 1), 1, anomaly_samples)
+        print(high_demands)
+        temp_Demands[anomalous_slice][model_change_time:end_anomaly + 1] = high_demands
+        # temp_Demands[anomalous_slice][model_change_time:end_anomaly+1] = [Wc_sharing] * (end_anomaly - model_change_time+1)
 
         # Aggregate values as before
         temp_Users[anomalous_slice], temp_s_Users[anomalous_slice] = similar_values(temp_Users[anomalous_slice],

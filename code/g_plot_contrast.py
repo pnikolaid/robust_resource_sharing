@@ -41,7 +41,7 @@ for anomaly_index, anomalous_slices in enumerate(anomaly_matrix):
 
     # The scatter plots will be saved here at some point
     fig, ax = plt.subplots()
-    for low_states_removal_ratio in betas:
+    for low_states_removal_ratio in [betas[-1]]:
 
         modes = ["no anomaly", "anomaly"]   # anomaly must be last
         #schemes = ["no sharing", "sharing", "sharing + testing"]
@@ -212,7 +212,7 @@ for anomaly_index, anomalous_slices in enumerate(anomaly_matrix):
 
     # The scatter plots will be saved here at some point
     fig, ax = plt.subplots()
-    for low_states_removal_ratio in betas:
+    for low_states_removal_ratio in [betas[-1]]:
         states_removed = round(states * low_states_removal_ratio)
 
         with open(f"ts{test_scenario}_sim_results_aNS{anomalous_slices[0]}_b{low_states_removal_ratio}.pkl", 'rb') as f:
