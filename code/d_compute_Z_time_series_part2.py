@@ -10,6 +10,7 @@ import math
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+
 def similar_values(olist, step):
     min_val = math.ceil(np.min(olist) / step)
     max_val = math.ceil(np.max(olist) / step)

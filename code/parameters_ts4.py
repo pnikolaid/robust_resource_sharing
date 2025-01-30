@@ -100,7 +100,7 @@ epsilon = 0.01/slices
 delta = 0.01/slices
 
 # Define P_H (re-run files e-g if changed)
-P_H = 12* [0.9]
+P_H = 12 * [0.9]
 
 # Define multiplexing layer (re-run files d-g if changed)
 mu = 2
@@ -117,7 +117,7 @@ round_step_m = 5    # similarly for MCS value
 round_step_w = 10   # similarly for PRBs
 
 # Sample default window size (re-run files f-g if changed)
-sample_size_n = [100]
+sample_size_n = [200]
 #sample_size_n = list(range(50, 300, 50))
 # sample_size_n = [1, 10, 20, 30, 40, 50, 100, 150, 200]
 

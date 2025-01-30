@@ -1,5 +1,5 @@
-from parameters import slices, sample_size_n, anomalous_slices, low_states_removal_ratio, start_anomaly, zones, freqs,\
-    test_scenario, test_scenario_plot_directory, round_step_u, round_step_w, P_H, Rc, a
+from parameters import slices, sample_size_n, start_anomaly, zones, freqs,\
+    test_scenario, test_scenario_plot_directory, round_step_u, round_step_w, P_H, Rc, a, anomaly_matrix
 
 import math
 import pickle
@@ -150,7 +150,8 @@ def big_multiplexing_function_over_time(t_Users, t_MCS, Wc, WH, scheme, stored_s
             # Allocate resources between slices in A by solving Binary Knapsack Problem (32)
             A_demands = [Demands[i][t] for i in A]
             A_deficits = [deficits[i] for i in A]
-            A_selected = bkp(A_deficits, A_demands, Wc)
+            int_A_deficits = [int(10000*i) for i in A_deficits]
+            A_selected = bkp(int_A_deficits, A_demands, Wc)
             A_accepted = [A[item] for item in A_selected]
             for i in A_accepted:
                 allocated_bandwidths[i] = Demands[i][t]
@@ -168,7 +169,8 @@ def big_multiplexing_function_over_time(t_Users, t_MCS, Wc, WH, scheme, stored_s
             else:
                 B_demands = [Demands[i][t] for i in B]
                 B_deficits = [deficits[i] for i in B]
-                B_selected = bkp(B_deficits, B_demands, WR)
+                int_B_deficits = [int(10000 * i) for i in B_deficits]
+                B_selected = bkp(int_B_deficits, B_demands, int(WR))
                 B_accepted = [B[item] for item in B_selected]
                 for i in B_accepted:
                     allocated_bandwidths[i] = Demands[i][t]
@@ -181,10 +183,11 @@ def big_multiplexing_function_over_time(t_Users, t_MCS, Wc, WH, scheme, stored_s
                     slice_index = B_rejected[arg_max]
                     allocated_bandwidths[slice_index] = WR
 
-            if scheme == "proportional":
-                excess_bandwidth_ratio = total_demand/Wc
+            if scheme == 'proportional':
+                excess_ratio = total_demand / Wc
                 for i in range(slices):
-                    allocated_bandwidths = Demands[i][t]/excess_bandwidth_ratio
+                    allocated_bandwidths[i] = Demands[i][t]/excess_ratio
+
         else:
             # Provisioned bandwidth was enough for all
             for i in range(slices):
@@ -196,18 +199,9 @@ def big_multiplexing_function_over_time(t_Users, t_MCS, Wc, WH, scheme, stored_s
                 u = 1
             else:
                 u = 0
-            deficits[i] = max(deficits[i] - u, 0) + P_H[i]
-            decisions[i].append(u)
 
-        # Update deficits
-        for i in range(slices):
-            if allocated_bandwidths[i] == Demands[i][t]:
-                u = 1
-            else:
-                u = 0
-
-            if scheme == "proportional":
-                u = allocated_bandwidths[i] / Demands[i][t]
+            if scheme == 'proportional':
+                u = allocated_bandwidths[i]/Demands[i][t]
 
             deficits[i] = max(deficits[i] - u, 0) + P_H[i]
             decisions[i].append(u)
@@ -221,7 +215,7 @@ def process_data(bandwidth, decisions, v_times, d_times, dict_anomaly_times, mod
     success_ratio = [[] for i in range(slices)]
     for i in range(slices):
         # success_ratio[i] = round(decisions[i].count(1) / len(decisions[i]) * 100, 2)
-        success_ratio[i] = round(sum(decisions[i]) / len(decisions[i]), 2)
+        success_ratio[i] = round(sum(decisions[i])/len(decisions[i]) * 100, 2)
         print(f"NS {i} satisfied for {success_ratio[i]}%  of the time (target = {100 * P_H[i]}%)")
 
     print("Total number of violations:", len(v_times))
@@ -295,19 +289,28 @@ def process_data(bandwidth, decisions, v_times, d_times, dict_anomaly_times, mod
     return results
 
 
-def create_anomaly(Users, Demands, MCS, t_Users, s_Users, Wc_sharing):
+def create_anomalies(t_Users, s_Users):
+    return_list = []
     dict_anomaly_times = {}
     end_anomaly = T - max(sample_size_n)
-    for i, anomalous_slice in enumerate(anomalous_slices):
+    anomalous_slice = anomalous_slices[0]
+    temp_Users = copy.deepcopy(or_Users)
+    temp_s_Users = copy.deepcopy(s_Users)
 
-        # create anomaly
-        new_trans_matrix = {}
-        old_trans_matrix = t_Users[anomalous_slice]
-        old_states = s_Users[anomalous_slice]
+    temp_Demands = copy.deepcopy(or_Demands)
+    temp_s_Demands = copy.deepcopy(s_Demands)
 
-        low_states_removal_number = int(low_states_removal_ratio * len(old_states))
-        states_to_be_removed = old_states[:low_states_removal_number]  # state space is sorted
-        states_to_stay = old_states[low_states_removal_number:]
+    # create anomalies
+    new_trans_matrix = {}
+    old_trans_matrix = t_Users[anomalous_slice]
+    old_states = s_Users[anomalous_slice]
+
+    # start from n-1 states all the way to just the worst state
+    for w in range(1, len(old_states)):
+
+        low_states_removal_ratio = w / len(old_states)
+        states_to_be_removed = old_states[:w]  # state space is sorted
+        states_to_stay = old_states[w:]
 
         for count, stay_state in enumerate(states_to_stay):
             row = {}
@@ -328,19 +331,22 @@ def create_anomaly(Users, Demands, MCS, t_Users, s_Users, Wc_sharing):
                 max_key = max(row, key=row.get)
                 row[max_key] += summed_transition
             else:
-                print("Please consider a different MC partition!")
-                exit()
+                print(f"Cannot create MC partition, considering 50% self loop 50% neighboring state")
                 # Go to the next state with probability 1/2 and stay where you are with probability 1/2
                 row[(stay_state, stay_state)] = 0.5
+
                 if count != len(states_to_stay) - 1:
+                    print(f"There exists a larger stay state so neighboring state = next state")
                     next_stay_state = states_to_stay[count + 1]
                     row[(stay_state, next_stay_state)] = 0.5
                 else:
+                    print(f"There does not exist a larger stay state so neighboring state = previous state")
                     prev_stay_state = states_to_stay[count - 1]
                     row[(stay_state, prev_stay_state)] = 0.5
             new_trans_matrix.update(row)
 
         new_states = states_to_stay
+
         # Generate data using new transition matrix
         matrix_as_list = store_as_matrix_list(new_trans_matrix, new_states)
 
@@ -349,44 +355,48 @@ def create_anomaly(Users, Demands, MCS, t_Users, s_Users, Wc_sharing):
         # Initialization
         model_change_time = start_anomaly
         model_change_state = new_states[0]
-        for time, value in enumerate(Users[anomalous_slice]):
+        for time, value in enumerate(or_Users[anomalous_slice]):
             if time >= start_anomaly and value in new_states:
                 model_change_time = time
                 model_change_state = value
                 break
 
         # Generate new sequence that starts from model_change_state
-        strings = [str(i) for i in new_states]
-        Markov_Chain = MarkovChain(matrix_as_list, strings)
-        new_sequence = Markov_Chain.simulate(end_anomaly + 1 - model_change_time - 1, str(model_change_state), seed=32)
-        new_sequence = [int(i) for i in new_sequence]
+        if len(states_to_stay) > 1:
+            strings = [str(i) for i in new_states]
+            Markov_Chain = MarkovChain(matrix_as_list, strings)
+            new_sequence = Markov_Chain.simulate(end_anomaly + 1 - model_change_time - 1, str(model_change_state), seed=32)
+            new_sequence = [int(i) for i in new_sequence]
+        else:
+            print("Only the largest state is left, new sequence is constant")
+            new_sequence = [states_to_stay[0]] * (end_anomaly + 1 - model_change_time)
 
         # Apply new sequence to old sequence at model_change_time
-        temp_Users = copy.deepcopy(Users)
         temp_Users[anomalous_slice][model_change_time:end_anomaly + 1] = new_sequence
 
         # Compute anomalous demands
-        temp_Demands = copy.deepcopy(Demands)
-        temp_Demands[anomalous_slice] = compute_demands(temp_Users[anomalous_slice], MCS[anomalous_slice], Rc[anomalous_slice])
+        temp_Demands[anomalous_slice] = compute_demands(temp_Users[anomalous_slice], or_MCS[anomalous_slice], Rc[anomalous_slice])
 
         # Create very high demands for checks
-        # Demands[anomalous_slice][model_change_time:end_anomaly+1] = [Wc_sharing] * (end_anomaly - model_change_time+1)
+        temp_Demands[anomalous_slice][model_change_time:end_anomaly+1] = [Wc_sharing] * (end_anomaly - model_change_time+1)
 
         # Aggregate values as before
-        temp_s_Users = copy.deepcopy(s_Users)
-        temp_Users[anomalous_slice], temp_s_Users[anomalous_slice] = similar_values(temp_Users[anomalous_slice], round_step_u)
-
-        temp_s_Demands = copy.deepcopy(s_Demands)
-        temp_Demands[anomalous_slice], temp_s_Demands[anomalous_slice] = similar_values(temp_Demands[anomalous_slice], round_step_w)
+        temp_Users[anomalous_slice], temp_s_Users[anomalous_slice] = similar_values(temp_Users[anomalous_slice],
+                                                                                    round_step_u)
+        temp_Demands[anomalous_slice], temp_s_Demands[anomalous_slice] = similar_values(temp_Demands[anomalous_slice],
+                                                                                        round_step_w)
 
         print(
             f"Created anomaly for NS {anomalous_slice} starting from time {model_change_time} to time {end_anomaly}"
-            f" by deleting the lowest {low_states_removal_ratio * 100}% states in the User MC\n")
+            f" by deleting the lowest {w} states out of the total {len(old_states)} states in the User MC"
+            f" (β={100*low_states_removal_ratio}%)\n")
         anomaly_times = list(range(model_change_time, end_anomaly + 1))
         dict_anomaly_times[anomalous_slice] = anomaly_times
 
         temp_user_matrix = matrix_as_list
-        return temp_Users, temp_Demands, temp_s_Users, temp_s_Demands, dict_anomaly_times, temp_user_matrix, states_to_stay
+        return_item = [temp_Users, temp_Demands, temp_s_Users, temp_s_Demands, dict_anomaly_times, temp_user_matrix, states_to_stay, low_states_removal_ratio]
+        return_list.append(return_item)
+    return return_list
 
 
 def plot_ecdf(time_series, string_label):
@@ -400,7 +410,7 @@ def plot_ecdf(time_series, string_label):
 # Load stochastic models and provisioned bandwidth
 string = ""
 for i in range(slices):
-    string += zones[i] + freqs[i]
+    string += zones[i] + freqs[i] + f"_{i}"
     if i != slices-1:
         string += "_vs_"
 
@@ -429,7 +439,7 @@ for i in range(slices):
     zone = zones[i]
     freq = freqs[i]
 
-    with open(f"ts{test_scenario}_" + zone + freq + '-DL-regular.pkl', 'rb') as f:
+    with open(f"ts{test_scenario}_" + zone + freq + f"_{i}" + '-DL-regular.pkl', 'rb') as f:
         new_list_dl = pickle.load(f)  # [RRC users, I_MCS, Demands]
 
     # Time series
@@ -446,10 +456,14 @@ for i in range(slices):
 
     s_Demands.append(new_list_dl[1][2])
 
-or_Demands = copy.deepcopy(Demands)
 or_Users = copy.deepcopy(Users)
+or_MCS = copy.deepcopy(MCS)
+or_Demands = copy.deepcopy(Demands)
 
 T = len(Users[0])
+for i in range(slices):
+    if len(Users[i]) <= T:
+        T = len(Users[i])
 
 print("Percentiles $W^H_i$:", WH)
 print(f"Number of timeslots: {T}")
@@ -470,59 +484,73 @@ for i in range(slices):
 print(f"User γ: {u_gamma}")
 print(f"MCS γ: {m_gamma}")
 
+beta_matrix = []
+for anomaly_index, anomalous_slices in enumerate(anomaly_matrix):
 
-# -------------------------- Create an Anomaly -------------------------------------------------------------------------
-print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-a_Users, a_Demands, a_s_Users, a_s_Demands, dict_anomaly_times, new_user_matrix, new_user_states = create_anomaly(Users, Demands, MCS, t_Users,
-                                                                                s_Users, Wc_sharing)
-# ------------------------- Store all simulations results in the "sim_results" dictionary ------------------------------
-sim_results = {}
-dict_h_times = defaultdict(list)
-# ------------------------------------------ Start simulations ---------------------------------------------------------
-modes = ["no anomaly", "anomaly"]   # anomaly must be last
-schemes = ["sharing + testing", "proportional"]
-for mode in modes:
+    # -------------------------- Create anomalies----------------------------------------------------------------
+    print("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    anomalies_list = create_anomalies(t_Users, s_Users)
+    beta_matrix.append([])
+    for anomaly_item in anomalies_list:
+        a_Users, a_Demands, _, _, dict_anomaly_times, _, _, low_states_removal_ratio = anomaly_item
+        beta_matrix[anomaly_index].append(low_states_removal_ratio)
 
-    # if anomaly mode, rewrite sequences with anomalous sequences
-    if mode == "anomaly":
-        Users = a_Users
-        Demands = a_Demands
+        # ------------------------- Store all simulations results in the "sim_results" dictionary ----------------------
+        sim_results = {}
+        dict_h_times = defaultdict(list)
+        # ------------------------------------------ Start simulations ------------------------------------------------
+        modes = ["no anomaly", "anomaly"]   # anomaly must be last
+        schemes = ["no sharing", "proportional", "sharing + testing"]
+        for mode in modes:
 
-    for scheme in schemes:
+            # if anomaly mode
+            if mode == "anomaly":
+                Users = a_Users
+                Demands = a_Demands
+            else:
+                Users = or_Users
+                Demands = or_Demands
 
-        label = mode + " & " + scheme
+            for scheme in schemes:
 
-        sim_results[label] = []
+                label = mode + " & " + scheme
 
-        # Set provisioned bandwidth
-        if scheme == "no sharing":
-            provisioned_bandwidth = Wc_no_sharing
-        else:
-            provisioned_bandwidth = Wc_sharing
+                sim_results[label] = []
 
-        for n in sample_size_n:
+                # Set provisioned bandwidth
+                if scheme == "no sharing":
+                    prov_bw = Wc_no_sharing
+                else:
+                    prov_bw = Wc_sharing
 
-            # Run the whole simulation and return statistics
-            print(f"\n++++++++++++++++++++++++ Running simulation for \"{label}\" and for n = {n} ++++++++++++++++++++")
-            decisions, v_times, d_times, dict_h_times = big_multiplexing_function_over_time(t_Users, t_MCS, provisioned_bandwidth, WH, scheme, n, dict_h_times)
-            # Process the statistics to get the results
-            results = process_data(provisioned_bandwidth, decisions, v_times, d_times, dict_anomaly_times, mode, scheme)
+                for n in sample_size_n:
 
-            # store the results
-            sim_results[label].append(results)
+                    # Run the whole simulation and return statistics
+                    print(f"\n++++++++++++++++++++ anomalous NS = {anomalous_slices[0]} | β = {low_states_removal_ratio} | mode = {label} | sample size = {n} +++++++++++++++")
+                    decisions, v_times, d_times, dict_h_times = big_multiplexing_function_over_time(t_Users, t_MCS,
+                                                                                                    prov_bw, WH, scheme,
+                                                                                                    n, dict_h_times)
+                    # Process the statistics to get the results
+                    results = process_data(prov_bw, decisions, v_times, d_times, dict_anomaly_times, mode, scheme)
 
-            # if the scheme does not perform hypothesis testing, no need to consider more sample sizes
-            if scheme != "sharing + testing":
-                break
+                    # store the results
+                    sim_results[label].append(results)
 
+                    # if the scheme does not perform hypothesis testing, no need to consider more sample sizes
+                    if scheme != "sharing + testing":
+                        break
 
-print("----------------------------------- Print and store simulation results dictionary -----------------------------")
-print(f"\n {sim_results}\n \n")
+        print("----------------------------------- Print and store simulation results dictionary ---------------------")
+        print(f"\n {sim_results}\n \n")
 
-# Store all data needed for plots
+        # Store all data needed for plots
 
-with open(f"ts{test_scenario}_sim_results.pkl", 'wb') as f:
-    pickle.dump(sim_results, f)
+        with open(f"ts{test_scenario}_sim_results_aNS{anomalous_slices[0]}_b{low_states_removal_ratio}.pkl", 'wb') as f:
+            pickle.dump(sim_results, f)
 
-with open(f"ts{test_scenario}_dict_h_times.pkl", 'wb') as f:
-    pickle.dump(dict_h_times, f)
+        with open(f"ts{test_scenario}_dict_h_times_{low_states_removal_ratio}.pkl", 'wb') as f:
+            pickle.dump(dict_h_times, f)
+
+print(beta_matrix)
+with open(f"ts{test_scenario}_beta_matrix.pkl", 'wb') as f:
+    pickle.dump(beta_matrix, f)
