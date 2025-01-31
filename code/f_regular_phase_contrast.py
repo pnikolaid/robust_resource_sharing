@@ -13,6 +13,7 @@ from e_trial_phase import store_as_matrix_list
 from ortools.algorithms import pywrapknapsack_solver
 from d_compute_Z_time_series_part2 import compute_demands, similar_values
 import time
+import statistics
 
 
 def mle(data):
@@ -308,6 +309,8 @@ def create_anomalies(t_Users, s_Users):
     # start from n-1 states all the way to just the worst state
     for w in range(1, len(old_states)):
 
+        w = int(2*len(old_states) / 3)
+
         low_states_removal_ratio = w / len(old_states)
         states_to_be_removed = old_states[:w]  # state space is sorted
         states_to_stay = old_states[w:]
@@ -400,6 +403,9 @@ def create_anomalies(t_Users, s_Users):
         temp_user_matrix = matrix_as_list
         return_item = [temp_Users, temp_Demands, temp_s_Users, temp_s_Demands, dict_anomaly_times, temp_user_matrix, states_to_stay, low_states_removal_ratio]
         return_list.append(return_item)
+
+        break
+
     return return_list
 
 

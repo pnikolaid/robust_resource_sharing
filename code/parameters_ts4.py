@@ -125,5 +125,5 @@ sample_size_n = [200]
 a = 0.01
 
 # Anomaly parameters (re-run files f-g if changed)
-anomaly_matrix = [[0], [2], [9]]
+anomaly_matrix = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]]
 start_anomaly = max(sample_size_n)
